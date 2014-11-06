@@ -14,8 +14,10 @@ class Range_In_Cluster {
 public:
     Range_In_Cluster(int id, int begin, int end);
     int id() const;
-    int begin();
-    int end();
+    int begin() const;
+    int end() const;
+    void move_to_right(int step);
+    void move_to_left(int step);
 };
 
 
@@ -36,7 +38,9 @@ public:
     bool has(int id) const;
     void add_at_end(int cell_id, int begin, int end);
     void add_at_end(const std::list<Range_In_Cluster> &ranges);
-    const std::list<Range_In_Cluster> &ranges();
+    const std::list<Range_In_Cluster> &ranges() const;
+    std::list<Range_In_Cluster> & ranges();
+
     std::list<Cluster> split(int id);
     bool has_capacity(int number_of_ranges);
     int size();

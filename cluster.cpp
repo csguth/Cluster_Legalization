@@ -46,17 +46,25 @@ bool Cluster::has(int id) const
 void Cluster::add_at_end(int cell_id, int begin, int end)
 {
     _ranges.push_back(Range_In_Cluster(cell_id, begin, end));
+    _end = end;
 }
 
 void Cluster::add_at_end(const std::list<Range_In_Cluster> &cells)
 {
     _ranges.insert(_ranges.end(), cells.begin(), cells.end());
+    _end = _ranges.back().end();
 }
 
-const std::list<Range_In_Cluster> &Cluster::ranges()
+const std::list<Range_In_Cluster> &Cluster::ranges() const
 {
     return _ranges;
 }
+
+std::list<Range_In_Cluster> &Cluster::ranges()
+{
+    return _ranges;
+}
+
 
 std::list<Cluster> Cluster::split(int id)
 {
@@ -109,14 +117,26 @@ int Range_In_Cluster::id() const
     return _id;
 }
 
-int Range_In_Cluster::begin()
+int Range_In_Cluster::begin() const
 {
     return _begin;
 }
 
-int Range_In_Cluster::end()
+int Range_In_Cluster::end() const
 {
     return _end;
+}
+
+void Range_In_Cluster::move_to_right(int step)
+{
+    _begin += step;
+    _end += step;
+}
+
+void Range_In_Cluster::move_to_left(int step)
+{
+    _begin -= step;
+    _end -= step;
 }
 
 

@@ -22,4 +22,6 @@ DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 HEADERS += \
     row.h \
-    cluster.h
+    cluster.h \
+    util.h \
+    exception.h
