@@ -40,29 +40,8 @@ std::list<Cluster>::iterator Row::__fill_cluster_with_a_range(std::list<Cluster>
 {
     Cluster * c = &(*cluster);
     c->add_at_end(id, begin, end);
-    std::list<Cluster>::iterator previous(cluster);
-    if(previous != _clusters.begin()) // se tem anterior
-    {
-        previous--;
-        if(!previous->is_free_space()) // se o anterior está ocupado, clusteriza com o anterior
-        {
-            previous->end(c->end());
-            previous->add_at_end(c->ranges());
-            _clusters.erase(cluster);
-            cluster = previous;
-        }
-    }
-    std::list<Cluster>::iterator next(cluster);
-    next++;
-    if(next != _clusters.end())
-    {
-        if(!next->is_free_space())
-        {
-            cluster->end(next->end());
-            cluster->add_at_end(next->ranges());
-            _clusters.erase(next);
-        }
-    }
+    cluster = __clusterize_with_previous(cluster);
+    cluster = __clusterize_with_next(cluster);
     return cluster;
 }
 
@@ -72,19 +51,7 @@ std::list<Cluster>::iterator Row::__place_range_at_beginning_of_cluster(std::lis
     int end_before = c->end();
     c->end(end);
     c->add_at_end(id, begin, end);
-    std::list<Cluster>::iterator previous(cluster);
-    if(previous != _clusters.begin()) // se tem anterior
-    {
-        previous--;
-        if(!previous->is_free_space()) // se o anterior está ocupado, clusteriza com o anterior
-        {
-            previous->end(c->end());
-            previous->add_at_end(c->ranges());
-            _clusters.erase(cluster);
-            cluster = previous;
-        }
-    }
-
+    cluster = __clusterize_with_previous(cluster);
     std::list<Cluster>::iterator next(cluster);
     next++;
     _clusters.insert(next, Cluster(end+1, end_before));
@@ -97,17 +64,7 @@ std::list<Cluster>::iterator Row::__place_range_at_end_of_cluster(std::list<Clus
     int begin_before = c->begin();
     c->begin(begin);
     c->add_at_end(id, begin, end);
-    std::list<Cluster>::iterator next(cluster);
-    next++;
-    if(next != _clusters.end())
-    {
-        if(!next->is_free_space())
-        {
-            c->add_at_end(next->ranges());
-            c->end(next->end());
-            _clusters.erase(next);
-        }
-    }
+    cluster = __clusterize_with_next(cluster);
     _clusters.insert(cluster, Cluster(begin_before, begin-1));
     return cluster;
 }
@@ -129,6 +86,10 @@ std::list<Cluster>::iterator Row::__place_range_at_middle_of_cluster(std::list<C
 
 std::list<Cluster>::iterator Row::__find_cluster_by_range(int begin, int end)
 {
+    if(end < begin)
+        throw Invalid_Range();
+    if(begin < _begin || end > _end)
+        throw Out_of_Bounds();
     std::list<Cluster>::iterator cluster = _clusters.end();
     for(std::list<Cluster>::iterator it = _clusters.begin(); it != _clusters.end(); it++)
     {
@@ -138,9 +99,6 @@ std::list<Cluster>::iterator Row::__find_cluster_by_range(int begin, int end)
             break;
         }
     }
-    //    if(cluster == _clusters.end() || !cluster->is_free_space())
-    //        throw Out_of_Bounds();
-
     return cluster;
 }
 
@@ -172,71 +130,54 @@ std::list<Cluster>::iterator Row::insert_range(std::pair<int, int> range, int id
     return insert_range(range.first, range.second, id);
 }
 
-bool Row::remove_by_id(int id)
+void Row::__remove_free_cluster(std::list<Cluster>::iterator cluster)
 {
-    std::list<Cluster>::iterator cluster = _clusters.end();
-    for(std::list<Cluster>::iterator it = _clusters.begin(); it != _clusters.end(); it++)
-    {
-        if(it->has(id))
-        {
-            cluster = it;
-            break;
-        }
-    }
-    if(cluster == _clusters.end())
-        return false;
-    std::list<Cluster> new_clusters = cluster->split(id);
-    std::list<Cluster>::iterator first_new = new_clusters.begin();
-    std::list<Cluster>::iterator last_new = new_clusters.end();
-    std::list<Cluster>::iterator last_element(last_new);
-    last_element--;
-    std::list<Cluster>::iterator previous(cluster);
     std::list<Cluster>::iterator next(cluster);
     next++;
-    if(cluster->number_of_ranges()==1 && cluster->has(id))
-    {
-        if(next == _clusters.end())
-        {
-            previous--;
-            previous->end(cluster->end());
-            _clusters.erase(cluster);
-        } else {
-            if(cluster == _clusters.begin())
-            {
-                next->begin(cluster->begin());
-                _clusters.erase(cluster);
-            } else {
-                previous--;
-                previous->end(next->end());
-                _clusters.erase(cluster);
-                _clusters.erase(next);
-            }
-        }
-        return true;
-    }
+    _clusters.erase(cluster);
+    if(next != _clusters.end())
+        cluster =__clusterize_with_previous(next);
     else
     {
-        if(cluster != _clusters.begin())
+        if(_clusters.empty())
+            clear();
+        else
         {
-            previous--;
-            if(previous->is_free_space() && first_new->is_free_space())
-            {
-                previous->end(first_new->end());
-                first_new++;
-            }
-        }
-        if(next != _clusters.end())
-        {
-            if(last_element->is_free_space() && next->is_free_space())
-            {
-                last_new = last_element;
-                next->begin(last_element->begin());
-            }
+            next--;
+            next->end(_end);
         }
     }
-    _clusters.insert(cluster, first_new, last_new);
+}
+
+void Row::remove_by_id(int id)
+{
+    std::list<Cluster>::iterator cluster =  std::find_if(_clusters.begin(), _clusters.end(), Cluster_Has_Id(id));
+    std::list<Cluster> new_clusters = cluster->split(id);
+    if(new_clusters.empty())
+        return __remove_free_cluster(cluster);
+
+    if(cluster != _clusters.begin())
+    {
+        std::list<Cluster>::iterator previous(cluster);
+        previous--;
+        if(previous->is_free_space())
+            previous->end(new_clusters.front().begin()-1);
+    }
+    else if(new_clusters.front().begin() != _begin)
+        _clusters.insert(cluster, Cluster(_begin, new_clusters.front().begin()-1));
+
+    std::list<Cluster>::iterator next(cluster);
+    next++;
+    if(next != _clusters.end())
+    {
+        if(next->is_free_space())
+            next->begin(new_clusters.back().end()+1);
+    }
+    else if(new_clusters.back().end() != _end)
+        _clusters.insert(next, Cluster(new_clusters.back().end()+1, _end));
+    _clusters.insert(cluster, new_clusters.begin(), new_clusters.end());
     _clusters.erase(cluster);
-    return true;
+
 }
 
 std::pair<int, int> Row::get_previous_and_next_free(std::pair<int, int> range, int id)
@@ -319,12 +260,21 @@ std::list<Cluster>::iterator Row::__clusterize_with_next(std::list<Cluster>::ite
 std::list<Cluster>::iterator Row::__clusterize_with_previous(std::list<Cluster>::iterator cluster_it)
 {
     if(cluster_it == _clusters.begin())
+    {
+        cluster_it->begin(_begin);
         return cluster_it;
+    }
     std::list<Cluster>::iterator previous(cluster_it);
     previous--;
-    if(!previous->is_free_space() && previous->end() == cluster_it->begin()-1)
+    if(!previous->is_free_space() && !cluster_it->is_free_space())
     {
         previous->add_at_end(cluster_it->ranges());
+        _clusters.erase(cluster_it);
+        return previous;
+    }
+    else if(previous->is_free_space() && cluster_it->is_free_space())
+    {
+        previous->end(cluster_it->end());
         _clusters.erase(cluster_it);
         return previous;
     }
@@ -400,16 +350,14 @@ std::list<Cluster>::iterator Row::move_cluster_to_left(std::list<Cluster>::itera
 
 std::list<Cluster>::iterator Row::find_cluster_by_range(std::pair<int, int> range)
 {
-    if(range.second < range.first)
-        throw Invalid_Range();
-    if(range.first < _begin || range.second > _end)
+    return __find_cluster_by_range(range.first, range.second);
+}
+
+std::list<Cluster>::iterator Row::find_cluster_by_value(int value)
+{
+    if(value < _begin || value > _end)
         throw Out_of_Bounds();
-    for(std::list<Cluster>::iterator it = _clusters.begin(); it != _clusters.end(); it++)
-    {
-        if(it->begin() <= range.first && it->end() >= range.second)
-            return it;
-    }
-    return _clusters.end();
+    return std::find_if(_clusters.begin(), _clusters.end(), Cluster_Has_Range(value, value));
 }
 
 std::list<Cluster>::iterator Row::not_valid_iterator()
