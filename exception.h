@@ -50,6 +50,15 @@ public:
     }
 };
 
+class Invalid_Step_Size : public std::exception
+{
+public:
+    const char * what() const throw()
+    {
+        return "Invalid Step Size";
+    }
+};
+
 
 }
 #endif // EXCEPTION_H

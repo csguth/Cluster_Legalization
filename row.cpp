@@ -3,6 +3,8 @@ namespace Overlap_Removal {
 
 Row::Row(int begin, int end) :_begin(begin), _end(end)
 {
+    if(_end < _begin)
+        throw Invalid_Range();
     clear();
 }
 
@@ -305,8 +307,12 @@ std::list<Cluster>::iterator Row::__clusterize_with_next(std::list<Cluster>::ite
     next++;
     if(next == _clusters.end())
         return cluster_it;
-    cluster_it->add_at_end(next->ranges());
-    _clusters.erase(next);
+    if(cluster_it->end() == next->begin()-1)
+    {
+        cluster_it->add_at_end(next->ranges());
+        _clusters.erase(next);
+        return cluster_it;
+    }
     return cluster_it;
 }
 
@@ -316,13 +322,19 @@ std::list<Cluster>::iterator Row::__clusterize_with_previous(std::list<Cluster>:
         return cluster_it;
     std::list<Cluster>::iterator previous(cluster_it);
     previous--;
-    previous->add_at_end(cluster_it->ranges());
-    _clusters.erase(cluster_it);
-    return previous;
+    if(!previous->is_free_space() && previous->end() == cluster_it->begin()-1)
+    {
+        previous->add_at_end(cluster_it->ranges());
+        _clusters.erase(cluster_it);
+        return previous;
+    }
+    return cluster_it;
 }
 
 std::list<Cluster>::iterator Row::move_cluster_to_right(std::list<Cluster>::iterator cluster_it, int step)
 {
+    if(step < 1)
+        throw Invalid_Step_Size();
     // Checa se tem espaço
     std::list<Cluster>::iterator next(cluster_it);
     next++;
@@ -354,6 +366,8 @@ std::list<Cluster>::iterator Row::move_cluster_to_right(std::list<Cluster>::iter
 
 std::list<Cluster>::iterator Row::move_cluster_to_left(std::list<Cluster>::iterator cluster_it, int step)
 {
+    if(step < 1)
+        throw Invalid_Step_Size();
     // Checa se tem espaço
     if(cluster_it == _clusters.begin())
         throw Not_Enough_Space();
@@ -370,7 +384,7 @@ std::list<Cluster>::iterator Row::move_cluster_to_left(std::list<Cluster>::itera
     next->begin(next->begin()-step);
 
     // Move todos os ranges dentro do cluster para a esquerda
-    cluster_it->begin(cluster_it->begin()-+step);
+    cluster_it->begin(cluster_it->begin()-step);
     cluster_it->end(cluster_it->end()-step);
     for(std::list<Range_In_Cluster>::iterator theRange = cluster_it->ranges().begin(); theRange != cluster_it->ranges().end(); theRange++)
         theRange->move_to_left(step);
@@ -378,9 +392,28 @@ std::list<Cluster>::iterator Row::move_cluster_to_left(std::list<Cluster>::itera
     // Diminui o cluster livre à esquerda e se precisar, remove-o
     std::list<Cluster>::iterator previous(cluster_it);
     previous--;
-    previous->begin(next->begin()-step);
+    previous->end(previous->end()-step);
     if(previous->end() < previous->begin())
         _clusters.erase(previous);
     return __clusterize_with_previous(cluster_it);
+}
+
+std::list<Cluster>::iterator Row::find_cluster_by_range(std::pair<int, int> range)
+{
+    if(range.second < range.first)
+        throw Invalid_Range();
+    if(range.first < _begin || range.second > _end)
+        throw Out_of_Bounds();
+    for(std::list<Cluster>::iterator it = _clusters.begin(); it != _clusters.end(); it++)
+    {
+        if(it->begin() <= range.first && it->end() >= range.second)
+            return it;
+    }
+    return _clusters.end();
+}
+
+std::list<Cluster>::iterator Row::not_valid_iterator()
+{
+    return _clusters.end();
 }
 }

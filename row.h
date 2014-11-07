@@ -41,6 +41,8 @@ public:
     std::pair<int, int> get_previous_and_next_free(int begin, int end, int id);
     std::list<Cluster>::iterator move_cluster_to_right(std::list<Cluster>::iterator cluster_it, int step);
     std::list<Cluster>::iterator move_cluster_to_left(std::list<Cluster>::iterator cluster_it, int step);
+    std::list<Cluster>::iterator find_cluster_by_range(std::pair<int, int> range);
+    std::list<Cluster>::iterator not_valid_iterator();
 };
 }
 
