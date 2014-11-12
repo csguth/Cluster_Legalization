@@ -64,6 +64,8 @@ private Q_SLOTS:
     void encontrando_um_cluster_com_base_em_uma_coordenada();
 
     void criar_um_range_invalido();
+    void verificar_espaco_livre_na_direita();
+    void verificar_espaco_livre_na_esquerda();
 
 };
 
@@ -1089,6 +1091,27 @@ void Cluster_LegalizationTest::criar_um_range_invalido()
     EXCEPT_THROW(r.insert_range(10, 4, 6), Overlap_Removal::Invalid_Range);
     EXCEPT_THROW(r = Overlap_Removal::Row(1000, 999), Overlap_Removal::Invalid_Range);
 
+}
+
+void Cluster_LegalizationTest::verificar_espaco_livre_na_direita()
+{
+    int begin = -1000;
+    int end = 1000;
+    Overlap_Removal::Row r(begin, end);
+    int space = 400;
+    std::list<Overlap_Removal::Cluster>::iterator theCluster = r.insert_range(std::make_pair(end-800, end-space), 1);
+    QVERIFY(theCluster->free_space_at_right() == space);
+
+}
+
+void Cluster_LegalizationTest::verificar_espaco_livre_na_esquerda()
+{
+    int begin = -1000;
+    int end = 1000;
+    Overlap_Removal::Row r(begin, end);
+    int space = 400;
+    std::list<Overlap_Removal::Cluster>::iterator theCluster = r.insert_range(std::make_pair(end-800, end-space), 1);
+    QVERIFY(theCluster->free_space_at_left() == theCluster->begin()-begin);
 }
 
 

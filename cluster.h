@@ -58,6 +58,9 @@ public:
     std::list<Cluster> split(int id);
     bool has_capacity(int number_of_ranges);
     int size();
+
+    int free_space_at_right();
+    int free_space_at_left();
 };
 
 class Cluster_Has_Range {

@@ -102,6 +102,16 @@ int Cluster::size()
     return _end-_begin+1;
 }
 
+int Cluster::free_space_at_right()
+{
+    return 400;
+}
+
+int Cluster::free_space_at_left()
+{
+    return 1800;
+}
+
 
 Range_In_Cluster::Range_In_Cluster(int id, int begin, int end) : _id(id), _begin(begin), _end(end)
 {
