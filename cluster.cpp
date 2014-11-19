@@ -40,16 +40,23 @@ bool Cluster::has(int id) const
     return std::find_if(_ranges.begin(), _ranges.end(), Range_Has_Id(id)) != _ranges.end();
 }
 
-void Cluster::add_at_end(int cell_id, int begin, int end)
+void Cluster::add_at_end(Range_In_Cluster range)
 {
-    _ranges.push_back(Range_In_Cluster(cell_id, begin, end));
-    _end = end;
+    int new_begin = _end - _begin + 1;
+    int size = range.end() - range.begin();
+    if(_ranges.empty())
+        new_begin = 0;
+    int new_end = new_begin + size;
+    range.begin(new_begin);
+    range.end(new_end);
+    _ranges.push_back(range);
+    _end = range.end();
 }
 
 void Cluster::add_at_end(const std::list<Range_In_Cluster> &cells)
 {
-    _ranges.insert(_ranges.end(), cells.begin(), cells.end());
-    _end = _ranges.back().end();
+    for(std::list<Range_In_Cluster>::const_iterator it = cells.begin(); it != cells.end(); it++)
+        this->add_at_end((*it));
 }
 
 const std::list<Range_In_Cluster> &Cluster::ranges() const
@@ -59,6 +66,7 @@ const std::list<Range_In_Cluster> &Cluster::ranges() const
 
 std::list<Range_In_Cluster> &Cluster::ranges()
 {
+
     return _ranges;
 }
 
@@ -76,13 +84,21 @@ std::list<Cluster> Cluster::split(int id)
             result.push_back(Cluster(it->begin(), it->end()));
         if(last_end == it->begin()-1)
         {
-            Cluster & last = result.back();
-            last.add_at_end(it->id(), it->begin(), it->end());
+            std::list<Cluster>::iterator end = result.end();
+            end--;
+            Cluster & last = (*end);
+            Range_In_Cluster range(it->id(), it->begin(), it->end());
+            range.cluster(end);
+            last.add_at_end(range);
         } else {
             result.push_back(Cluster(last_end+1, it->begin()-1));
             result.push_back(Cluster(it->begin(), it->end()));
-            Cluster & last = result.back();
-            last.add_at_end(it->id(), it->begin(), it->end());
+            std::list<Cluster>::iterator end = result.end();
+            end--;
+            Cluster & last = (*end);
+            Range_In_Cluster range(it->id(), it->begin(), it->end());
+            range.cluster(end);
+            last.add_at_end(range);
         }
         last_end = it->end();
     }
@@ -102,39 +118,14 @@ int Cluster::size()
     return _end-_begin+1;
 }
 
-
-Range_In_Cluster::Range_In_Cluster(int id, int begin, int end) : _id(id), _begin(begin), _end(end)
+void Cluster::set_cluster_iterator_to_all_ranges(std::list<Cluster>::iterator it)
 {
-
+    for(std::list<Range_In_Cluster>::iterator range = _ranges.begin(); range != _ranges.end(); range++)
+        range->cluster(it);
 }
 
 
-int Range_In_Cluster::id() const
-{
-    return _id;
-}
 
-int Range_In_Cluster::begin() const
-{
-    return _begin;
-}
-
-int Range_In_Cluster::end() const
-{
-    return _end;
-}
-
-void Range_In_Cluster::move_to_right(int step)
-{
-    _begin += step;
-    _end += step;
-}
-
-void Range_In_Cluster::move_to_left(int step)
-{
-    _begin -= step;
-    _end -= step;
-}
 
 
 }

@@ -17,11 +17,13 @@ TEMPLATE = app
 
 SOURCES += tst_cluster_legalizationtest.cpp \
     row.cpp \
-    cluster.cpp
+    cluster.cpp \
+    range_in_cluster.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 HEADERS += \
     row.h \
     cluster.h \
     util.h \
-    exception.h
+    exception.h \
+    range_in_cluster.h

@@ -30,6 +30,7 @@ class Row
 
 public:
     Row(int begin, int end);
+    Row(Row & other);
     void clear();
     int begin();
     int end();
@@ -44,6 +45,7 @@ public:
     std::list<Cluster>::iterator move_cluster_to_left(std::list<Cluster>::iterator cluster_it, int step);
     std::list<Cluster>::iterator find_cluster_by_range(std::pair<int, int> range);
     std::list<Cluster>::iterator find_cluster_by_value(int value);
+    std::list<Cluster>::iterator first_cluster_iterator();
     std::list<Cluster>::iterator not_valid_iterator();
 };
 }
