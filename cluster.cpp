@@ -66,7 +66,6 @@ const std::list<Range_In_Cluster> &Cluster::ranges() const
 
 std::list<Range_In_Cluster> &Cluster::ranges()
 {
-
     return _ranges;
 }
 
@@ -123,8 +122,6 @@ void Cluster::set_cluster_iterator_to_all_ranges(std::list<Cluster>::iterator it
     for(std::list<Range_In_Cluster>::iterator range = _ranges.begin(); range != _ranges.end(); range++)
         range->cluster(it);
 }
-
-
 
 
 

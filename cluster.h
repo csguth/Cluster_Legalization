@@ -7,10 +7,6 @@
 namespace Overlap_Removal {
 
 
-
-
-
-
 class Range_In_Cluster;
 class Cluster
 {
