@@ -55,6 +55,11 @@ public:
         return c.has(_id);
     }
 };
+
+
 }
+
+typedef std::list<Overlap_Removal::Cluster>::iterator Cluster_Iterator;
+
 
 #endif // CLUSTER_H

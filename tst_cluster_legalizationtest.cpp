@@ -68,15 +68,11 @@ private Q_SLOTS:
 
     void encontrando_um_cluster_com_base_em_um_range();
     void encontrando_um_cluster_com_base_em_uma_coordenada();
-
     void criar_um_range_invalido();
-
-
     void mover_um_cluster_sem_precisar_passar_por_todos_do_cluster();
     void referencia_range_para_cluster();
-
-
     void clone_de_linha();
+    void insercao_em_um_cluster_especifico();
 
 };
 
@@ -86,7 +82,7 @@ Cluster_LegalizationTest::Cluster_LegalizationTest()
 
 bool Cluster_LegalizationTest::verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(Overlap_Removal::Row &r)
 {
-    for(std::list<Overlap_Removal::Cluster>::iterator it = r.first_cluster_iterator(); it != r.not_valid_iterator(); it++)
+    for(Cluster_Iterator it = r.first_cluster_iterator(); it != r.not_valid_iterator(); it++)
     {
         for(std::list<Overlap_Removal::Range_In_Cluster>::const_iterator it2 = it->ranges().begin(); it2 != it->ranges().end(); it2++)
         {
@@ -109,6 +105,7 @@ void Cluster_LegalizationTest::criar_uma_linha_vazia()
     const Overlap_Removal::Cluster & c = r.cluster(0);
     QVERIFY2(c.begin() == r.begin() && c.end() == r.end(), "O cluster deve representar todo o range da linha");
     QVERIFY2(c.is_free_space(), "O cluster deve representar um espaço livre");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_fora_dos_limites()
@@ -123,6 +120,7 @@ void Cluster_LegalizationTest::inserir_fora_dos_limites()
     EXCEPT_THROW(r.insert_range(1000, 1100, 4), Overlap_Removal::Out_of_Bounds);
     EXCEPT_THROW(r.insert_range(-5, 1005, 5), Overlap_Removal::Out_of_Bounds);
     EXCEPT_NOT_THROW(r.insert_range(10, 10, 7), Overlap_Removal::Out_of_Bounds);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -133,9 +131,10 @@ void Cluster_LegalizationTest::inserir_uma_celula_em_um_cluster()
         int end = 999;
         int cell_id = 666;
         Overlap_Removal::Row r(begin, end);
-        std::list<Overlap_Removal::Cluster>::iterator theCluster = r.insert_range(begin, end, cell_id);
+        Cluster_Iterator theCluster = r.insert_range(begin, end, cell_id);
         QVERIFY2(theCluster->has(cell_id), "A célula deve estar no cluster");
         QVERIFY2(theCluster->number_of_ranges() == 1, "A célula deve estar no cluster sozinha");
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     {
         int begin = 0;
@@ -145,12 +144,13 @@ void Cluster_LegalizationTest::inserir_uma_celula_em_um_cluster()
         int cell1_id = 666;
         int cell2_id = 700;
         Overlap_Removal::Row r(begin, end);
-        std::list<Overlap_Removal::Cluster>::iterator primeiro_cluster = r.insert_range(cell1.first, cell1.second, cell1_id);
-        std::list<Overlap_Removal::Cluster>::iterator segundo_cluster = r.insert_range(cell2.first, cell2.second, cell2_id);
+        Cluster_Iterator primeiro_cluster = r.insert_range(cell1.first, cell1.second, cell1_id);
+        Cluster_Iterator segundo_cluster = r.insert_range(cell2.first, cell2.second, cell2_id);
         QVERIFY2(segundo_cluster->has(cell1_id), "A célula deve estar no cluster");
         QVERIFY2(segundo_cluster->has(cell2_id), "A célula deve estar no cluster");
         QVERIFY2(segundo_cluster->number_of_ranges() == 2, "Deve ter duas células no cluster");
         QVERIFY(&(*primeiro_cluster) == &(*segundo_cluster));
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
 
@@ -160,12 +160,13 @@ void Cluster_LegalizationTest::inserir_uma_celula_que_ocupe_um_cluster_inteiro()
     int end = 999;
     int cell_id  = 1;
     Overlap_Removal::Row r(begin, end);
-    std::list<Overlap_Removal::Cluster>::iterator o_cluster = r.insert_range(begin, end, cell_id);
+    Cluster_Iterator o_cluster = r.insert_range(begin, end, cell_id);
 
     QVERIFY2(r.number_of_clusters() == 1, "Só pode ter um Cluster");
     QVERIFY2(o_cluster->begin() == r.begin() && o_cluster->end() == r.end(), "O cluster deve representar todo o range da linha");
     QVERIFY2(!o_cluster->is_free_space(), "O cluster deve representar um espaço ocupado");
     QVERIFY2(&(*o_cluster) == &r.cluster(0), "O cluster deve ser o primeiro cluster");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_uma_celula_no_inicio_do_cluster()
@@ -185,6 +186,7 @@ void Cluster_LegalizationTest::inserir_uma_celula_no_inicio_do_cluster()
     const Overlap_Removal::Cluster & c2 = r.cluster(1);
     QVERIFY2(c2.begin() == cell_end + 1 && c2.end() == end, "O cluster deve representar o range livre na linha");
     QVERIFY2(c2.is_free_space(), "O cluster deve representar um espaço livre");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_uma_celula_no_fim_do_cluster()
@@ -204,6 +206,7 @@ void Cluster_LegalizationTest::inserir_uma_celula_no_fim_do_cluster()
     const Overlap_Removal::Cluster & c2 = r.cluster(1);
     QVERIFY2(c2.begin() == cell_begin && c2.end() == end, "O cluster deve representar o range ocupado pela célula");
     QVERIFY2(!c2.is_free_space(), "O cluster deve representar um espaço ocupado");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_uma_celula_no_meio_do_cluster()
@@ -228,6 +231,7 @@ void Cluster_LegalizationTest::inserir_uma_celula_no_meio_do_cluster()
     const Overlap_Removal::Cluster & c3 = r.cluster(2);
     QVERIFY2(c3.begin() == cell_end+1 && c3.end() == end, "O cluster deve representar um range livre na linha");
     QVERIFY2(c3.is_free_space(), "O cluster deve representar um espaço livre");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_no_inicio_e_no_fim_deixando_um_espaco_no_meio()
@@ -255,6 +259,7 @@ void Cluster_LegalizationTest::inserir_no_inicio_e_no_fim_deixando_um_espaco_no_
     const Overlap_Removal::Cluster & c3 = r.cluster(2);
     QVERIFY2(c3.begin() == cell2_begin && c3.end() == end, "O cluster deve representar o range ocupado pela célula");
     QVERIFY2(!c3.is_free_space(), "O cluster deve representar um espaço ocupado");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_no_inicio_no_fim_e_no_meio_sem_clusterizar()
@@ -281,7 +286,7 @@ void Cluster_LegalizationTest::inserir_no_inicio_no_fim_e_no_meio_sem_clusteriza
     QVERIFY(!c3.is_free_space());
     QVERIFY(c4.is_free_space());
     QVERIFY(!c5.is_free_space());
-
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -329,6 +334,7 @@ void Cluster_LegalizationTest::inserir_no_fim_e_no_inicio_clusterizando()
     QVERIFY2(c1.has(cell1_id), "A célula de id = 'cell1_id' deve ester no cluster");
     QVERIFY2(c1.has(cell2_id), "A célula de id = 'cell2_id' deve ester no cluster");
     QVERIFY2(!c1.has(3), "A célula de id = 3 não deve ester no cluster");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_de_uma_a_10_celulas_sem_clusterizar_e_com_espaco_nos_dois_cantos()
@@ -368,7 +374,7 @@ void Cluster_LegalizationTest::inserir_de_uma_a_10_celulas_sem_clusterizar_e_com
     QVERIFY(r.number_of_clusters() == 19);
     r.insert_range(cell10, 10);
     QVERIFY(r.number_of_clusters() == 21);
-
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -409,6 +415,7 @@ void Cluster_LegalizationTest::inserir_de_uma_a_10_celulas_sem_clusterizar_gruda
     QVERIFY(r.number_of_clusters() == 18);
     r.insert_range(cell10, 10);
     QVERIFY(r.number_of_clusters() == 20);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_de_uma_a_10_celulas_sem_clusterizar_grudado_no_fim()
@@ -448,6 +455,7 @@ void Cluster_LegalizationTest::inserir_de_uma_a_10_celulas_sem_clusterizar_gruda
     QVERIFY(r.number_of_clusters() == 19);
     r.insert_range(cell10, 10);
     QVERIFY(r.number_of_clusters() == 20);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::inserir_em_um_lugar_ja_ocupado()
@@ -462,6 +470,7 @@ void Cluster_LegalizationTest::inserir_em_um_lugar_ja_ocupado()
         EXCEPT_NOT_THROW(r.insert_range(cell1, 1), Overlap_Removal::Already_Filled);
         EXCEPT_NOT_THROW(r.insert_range(cell2, 2), Overlap_Removal::Already_Filled);
         EXCEPT_THROW(r.insert_range(cell3, 3), Overlap_Removal::Range_Too_Big);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // no fim de um cluster ocupado
         int begin = 0;
@@ -473,6 +482,7 @@ void Cluster_LegalizationTest::inserir_em_um_lugar_ja_ocupado()
         EXCEPT_NOT_THROW(r.insert_range(cell1, 1), Overlap_Removal::Already_Filled);
         EXCEPT_NOT_THROW(r.insert_range(cell2, 2), Overlap_Removal::Already_Filled);
         EXCEPT_THROW(r.insert_range(cell3, 3), Overlap_Removal::Already_Filled);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // bem no meio de um cluster ocupado
         int begin = 0;
@@ -484,6 +494,7 @@ void Cluster_LegalizationTest::inserir_em_um_lugar_ja_ocupado()
         EXCEPT_NOT_THROW(r.insert_range(cell1, 1), Overlap_Removal::Already_Filled);
         EXCEPT_NOT_THROW(r.insert_range(cell2, 2), Overlap_Removal::Already_Filled);
         EXCEPT_THROW(r.insert_range(cell3, 3), Overlap_Removal::Already_Filled);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
 
@@ -493,10 +504,10 @@ void Cluster_LegalizationTest::inserir_e_retornar_o_iterador_para_o_cluster()
     int end = 1899;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(50, 99);
-    std::list<Overlap_Removal::Cluster>::iterator theCluster = r.insert_range(cell1, 1);
+    Cluster_Iterator theCluster = r.insert_range(cell1, 1);
     QVERIFY(theCluster->has(1));
     QVERIFY(!theCluster->has(2));
-
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 
@@ -508,9 +519,10 @@ void Cluster_LegalizationTest::clusterizar_com_o_cluster_da_direita()
     std::pair<int, int> cell1(50, 99);
     std::pair<int, int> cell2(100, 299);
     r.insert_range(cell2, 2);
-    std::list<Overlap_Removal::Cluster>::iterator theCluster = r.insert_range(cell1, 1);
+    Cluster_Iterator theCluster = r.insert_range(cell1, 1);
     QVERIFY(theCluster->has(2) && theCluster->has(1));
     QVERIFY(r.number_of_clusters() == 3);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster()
@@ -540,6 +552,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster()
     QVERIFY2(c2.has(1), "Célula 1 deve pertencer ao segundo cluster");
     QVERIFY2(c2.has(2), "Célula 2 deve pertencer ao segundo cluster");
     QVERIFY2(!c2.has(3), "Célula 3 não deve pertencer ao segundo cluster");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster()
@@ -569,6 +582,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster()
     QVERIFY2(!c2.has(1), "Célula 1 não deve pertencer ao segundo cluster");
     QVERIFY2(c2.has(2), "Célula 2 deve pertencer ao segundo cluster");
     QVERIFY2(c2.has(3), "Célula 3 deve pertencer ao segundo cluster");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -605,6 +619,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_meio_de_um_cluster()
     QVERIFY2(c4.number_of_ranges() == 1, "Quarto cluster deve ser ocupado por uma célula");
     QVERIFY2(c2.has(1), "Célula 1 deve pertencer ao segundo cluster");
     QVERIFY2(c4.has(3), "Célula 3 deve pertencer ao quarto cluster");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_no_cluster()
@@ -619,6 +634,7 @@ void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_no_cluster()
     QVERIFY2(r.number_of_clusters() == 1, "Deve ter 1 clusters");
     const Overlap_Removal::Cluster & c1 = r.cluster(0);
     QVERIFY2(c1.is_free_space(), "Cluster que sobrou deve estar vazio");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster_grudado_no_inicio_da_linha()
@@ -633,6 +649,7 @@ void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster
     const Overlap_Removal::Cluster & c1 = r.cluster(0);
     QVERIFY2(c1.is_free_space(), "Cluster que sobrou deve estar vazio");
     QVERIFY2(c1.begin() == begin && c1.end() == end, "Cluster que sobrou deve estar vazio e deve ser o único");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster_grudado_no_fim_da_linha()
@@ -647,6 +664,7 @@ void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster
     const Overlap_Removal::Cluster & c1 = r.cluster(0);
     QVERIFY2(c1.is_free_space(), "Cluster que sobrou deve estar vazio");
     QVERIFY2(c1.begin() == begin && c1.end() == end, "Cluster que sobrou deve estar vazio e deve ser o único");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster_que_ocupa_toda_a_linha()
@@ -661,6 +679,7 @@ void Cluster_LegalizationTest::remover_uma_celula_que_esta_sozinha_em_um_cluster
     const Overlap_Removal::Cluster & c1 = r.cluster(0);
     QVERIFY2(c1.is_free_space(), "Cluster que sobrou deve estar vazio");
     QVERIFY2(c1.begin() == begin && c1.end() == end, "Cluster que sobrou deve estar vazio e deve ser o único");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster_grudado_no_inicio_da_linha()
@@ -686,6 +705,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster_grudad
     QVERIFY(c1.end() == c2.begin()-1);
     QVERIFY(c2.end() == c3.begin()-1);
     QVERIFY(c3.end() == end);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster_grudado_no_fim_da_linha()
@@ -711,6 +731,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster_grudado_n
     QVERIFY(c1.end() == c2.begin()-1);
     QVERIFY(c2.end() == c3.begin()-1);
     QVERIFY(c3.end() == end);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster_que_ocupa_toda_a_linha()
@@ -733,6 +754,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_inicio_de_um_cluster_que_oc
     QVERIFY(c1.begin() == begin);
     QVERIFY(c1.end() == c2.begin()-1);
     QVERIFY(c2.end() == end);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster_que_ocupa_toda_a_linha()
@@ -755,6 +777,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_fim_de_um_cluster_que_ocupa
     QVERIFY(c1.begin() == begin);
     QVERIFY(c1.end() == c2.begin()-1);
     QVERIFY(c2.end() == end);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::remover_uma_celula_do_meio_de_um_cluster_que_ocupa_toda_a_linha()
@@ -778,6 +801,7 @@ void Cluster_LegalizationTest::remover_uma_celula_do_meio_de_um_cluster_que_ocup
     QVERIFY(c1.end() == c2.begin()-1);
     QVERIFY(c2.end() == c3.begin()-1);
     QVERIFY(c3.end() == end);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::obter_limites_do_cluster()
@@ -790,6 +814,7 @@ void Cluster_LegalizationTest::obter_limites_do_cluster()
     const Overlap_Removal::Cluster & c = r.cluster(1);
     QVERIFY(c.begin() == cell1.first);
     QVERIFY(c.end() == cell1.second);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 
@@ -805,9 +830,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         std::pair<int, int> cell3(450, 499);
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell3, 4);
-        QVERIFY(nearests.first == 50);
-        QVERIFY(nearests.second == 50);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell3);
+        QVERIFY(nearests.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second == nearests.first);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Só depois
         int begin = 0;
@@ -820,9 +846,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell4, 4);
-        QVERIFY(nearests.first == 500);
-        QVERIFY(nearests.second == 500);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first == nearests.second);
+        QVERIFY(nearests.second->begin() == 500);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Antes e Depois
         int begin = -1000;
@@ -835,9 +862,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell4, 4);
-        QVERIFY(nearests.first == -190);
-        QVERIFY(nearests.second == 500);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second->begin() == 500);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Não tem
         int begin = 0;
@@ -850,9 +878,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell4, 4);
-        QVERIFY(nearests.first == std::numeric_limits<int>::min());
-        QVERIFY(nearests.second == std::numeric_limits<int>::max());
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first == nearests.second);
+        QVERIFY(nearests.second == r.not_valid_iterator());
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
 
@@ -864,9 +893,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_comeca_a
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(180, 279);
     r.insert_range(cell1, 1);
-    std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-    QVERIFY(nearests.first == 100);
-    QVERIFY(nearests.second == 240);
+    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second->begin() == cell1.second + 1);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_cabe_inteira_dentro_de_um_cluster()
@@ -877,9 +907,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_cabe_int
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(210, 229);
     r.insert_range(cell1, 1);
-    std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-    QVERIFY(nearests.first == 180);
-    QVERIFY(nearests.second == 240);
+    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second->begin() == cell1.second + 1);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_ocupa_o_mesmo_espaco_do_cluster()
@@ -890,9 +921,12 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_ocupa_o_
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(200, 239);
     r.insert_range(cell1, 1);
-    std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-    QVERIFY(nearests.first == 160);
-    QVERIFY(nearests.second == 240);
+    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second->begin() == cell1.second + 1);
+    QVERIFY(nearests.first->has_capacity(cell2.second-cell2.first+1));
+    QVERIFY(nearests.second->has_capacity(cell2.second-cell2.first+1));
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_tem_o_mesmo_tamanho_do_cluster()
@@ -904,9 +938,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_tem_o_me
         std::pair<int, int> cell1(200, 239);
         std::pair<int, int> cell2(220, 259);
         r.insert_range(cell1, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == 160);
-        QVERIFY(nearests.second == 240);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second->begin() == cell1.second + 1);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     {
         int begin = -1000;
@@ -915,9 +950,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_tem_o_me
         std::pair<int, int> cell1(200, 239);
         std::pair<int, int> cell2(180, 219);
         r.insert_range(cell1, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == 160);
-        QVERIFY(nearests.second == 240);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second->begin() == cell1.second + 1);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
 
@@ -929,9 +965,11 @@ void Cluster_LegalizationTest::obter_posicao_mais_proxima_se_a_celula_cabe_onde_
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(300, 399);
     r.insert_range(cell1, 1);
-    std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-    QVERIFY(nearests.first == 300);
-    QVERIFY(nearests.second == 300);
+    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first == nearests.second);
+    QVERIFY(nearests.first->begin() <= cell2.first);
+    QVERIFY(nearests.first->end() >= cell2.second);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_nao_clusterizar()
@@ -941,8 +979,8 @@ void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_nao_clusterizar()
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(250, 269);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
-    std::list<Overlap_Removal::Cluster>::iterator second_cluster = r.insert_range(cell2, 2);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator second_cluster = r.insert_range(cell2, 2);
 
     int step = 4;
     first_cluster = r.move_cluster_to_right(first_cluster, step);
@@ -951,6 +989,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_nao_clusterizar()
     QVERIFY(first_cluster->begin() == cell1.first + step);
     QVERIFY(first_cluster->end() == cell1.second + step);
     QVERIFY2(&(*first_cluster) != &(*second_cluster), "Não pode clusterizar!");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_clusterizar()
@@ -960,7 +999,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_clusterizar()
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(250, 269);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     r.insert_range(cell2, 2);
 
     int step = 10;
@@ -971,6 +1010,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_direita_e_clusterizar()
     QVERIFY(the_cluster->begin() == cell1.first + step);
     QVERIFY(the_cluster->end() == cell2.second);
     QVERIFY(the_cluster->number_of_ranges() == 2);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_nao_clusterizar()
@@ -980,8 +1020,8 @@ void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_nao_clusterizar(
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(250, 269);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
-    std::list<Overlap_Removal::Cluster>::iterator second_cluster = r.insert_range(cell2, 2);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator second_cluster = r.insert_range(cell2, 2);
 
     int step = 4;
     second_cluster = r.move_cluster_to_left(second_cluster, step);
@@ -990,6 +1030,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_nao_clusterizar(
     QVERIFY(second_cluster->begin() == cell2.first - step);
     QVERIFY(second_cluster->end() == cell2.second - step);
     QVERIFY2(&(*first_cluster) != &(*second_cluster), "Não pode clusterizar!");
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_clusterizar()
@@ -999,7 +1040,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_clusterizar()
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(250, 269);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     the_cluster = r.insert_range(cell2, 2);
 
     int step = 10;
@@ -1010,6 +1051,7 @@ void Cluster_LegalizationTest::mover_um_cluster_para_esquerda_e_clusterizar()
     QVERIFY(the_cluster->begin() == cell1.first);
     QVERIFY(the_cluster->end() == cell2.second - step);
     QVERIFY(the_cluster->number_of_ranges() == 2);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_o_cluster_do_fim_para_a_esquerda()
@@ -1018,10 +1060,11 @@ void Cluster_LegalizationTest::mover_o_cluster_do_fim_para_a_esquerda()
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(200, end);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     r.move_cluster_to_left(the_cluster, 10);
 
     QVERIFY(r.number_of_clusters() == 3);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_o_cluster_do_inicio_para_a_direita()
@@ -1030,10 +1073,11 @@ void Cluster_LegalizationTest::mover_o_cluster_do_inicio_para_a_direita()
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(begin, 200);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     r.move_cluster_to_right(the_cluster, 10);
 
     QVERIFY(r.number_of_clusters() == 3);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::impedir_que_mova_um_cluster_para_a_direita_no_limite_da_linha()
@@ -1042,8 +1086,9 @@ void Cluster_LegalizationTest::impedir_que_mova_um_cluster_para_a_direita_no_lim
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(900, 1000);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     EXCEPT_THROW(r.move_cluster_to_right(the_cluster, 10), Overlap_Removal::Not_Enough_Space);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::impedir_que_mova_um_cluster_para_a_esquerda_no_inicio_da_linha()
@@ -1052,8 +1097,9 @@ void Cluster_LegalizationTest::impedir_que_mova_um_cluster_para_a_esquerda_no_in
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(-1000, 100);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     EXCEPT_THROW(r.move_cluster_to_left(the_cluster, 1), Overlap_Removal::Not_Enough_Space);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::impedir_que_tente_mover_um_cluster_com_um_passo_menor_que_1()
@@ -1062,7 +1108,7 @@ void Cluster_LegalizationTest::impedir_que_tente_mover_um_cluster_com_um_passo_m
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(0, 100);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.insert_range(cell1, 1);
     EXCEPT_THROW(the_cluster = r.move_cluster_to_left(the_cluster, 0), Overlap_Removal::Invalid_Step_Size);
     EXCEPT_THROW(the_cluster = r.move_cluster_to_left(the_cluster, -1), Overlap_Removal::Invalid_Step_Size);
     EXCEPT_NOT_THROW(the_cluster = r.move_cluster_to_left(the_cluster, 1), Overlap_Removal::Invalid_Step_Size);
@@ -1070,6 +1116,7 @@ void Cluster_LegalizationTest::impedir_que_tente_mover_um_cluster_com_um_passo_m
     EXCEPT_THROW(the_cluster = r.move_cluster_to_right(the_cluster, 0), Overlap_Removal::Invalid_Step_Size);
     EXCEPT_THROW(the_cluster = r.move_cluster_to_right(the_cluster, -1), Overlap_Removal::Invalid_Step_Size);
     EXCEPT_NOT_THROW(the_cluster = r.move_cluster_to_right(the_cluster, 1), Overlap_Removal::Invalid_Step_Size);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::impedir_que_mova_para_a_direita_sem_espaco_livre()
@@ -1079,10 +1126,11 @@ void Cluster_LegalizationTest::impedir_que_mova_para_a_direita_sem_espaco_livre(
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(0, 100);
     std::pair<int, int> cell2(110, 200);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
-    std::list<Overlap_Removal::Cluster>::iterator second_cluster = r.insert_range(cell2, 2);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator second_cluster = r.insert_range(cell2, 2);
     EXCEPT_THROW(first_cluster = r.move_cluster_to_right(first_cluster, 10), Overlap_Removal::Not_Enough_Space);
     EXCEPT_NOT_THROW(first_cluster = r.move_cluster_to_right(first_cluster, 9), Overlap_Removal::Not_Enough_Space);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -1093,10 +1141,11 @@ void Cluster_LegalizationTest::impedir_que_mova_para_a_esquerda_sem_espaco_livre
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(0, 100);
     std::pair<int, int> cell2(110, 200);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
-    std::list<Overlap_Removal::Cluster>::iterator second_cluster = r.insert_range(cell2, 2);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator second_cluster = r.insert_range(cell2, 2);
     EXCEPT_THROW(second_cluster = r.move_cluster_to_left(second_cluster, 10), Overlap_Removal::Not_Enough_Space);
     EXCEPT_NOT_THROW(second_cluster = r.move_cluster_to_left(second_cluster, 9), Overlap_Removal::Not_Enough_Space);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::encontrando_um_cluster_com_base_em_um_range()
@@ -1106,11 +1155,12 @@ void Cluster_LegalizationTest::encontrando_um_cluster_com_base_em_um_range()
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(0, 100);
     std::pair<int, int> cell2(90, 200);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
-    std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.find_cluster_by_range(cell1);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator the_cluster = r.find_cluster_by_range(cell1);
     QVERIFY(&(*the_cluster) == &(*first_cluster));
     the_cluster = r.find_cluster_by_range(cell2);
     QVERIFY(the_cluster == first_cluster);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 
 }
 
@@ -1120,15 +1170,16 @@ void Cluster_LegalizationTest::encontrando_um_cluster_com_base_em_uma_coordenada
     int end = 1000;
     Overlap_Removal::Row r(begin, end);
     std::pair<int, int> cell1(0, 100);
-    std::list<Overlap_Removal::Cluster>::iterator first_cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator first_cluster = r.insert_range(cell1, 1);
     for(int i = begin; i <= end; i++)
     {
-        std::list<Overlap_Removal::Cluster>::iterator the_cluster = r.find_cluster_by_value(i);
+        Cluster_Iterator the_cluster = r.find_cluster_by_value(i);
         if(i >= cell1.first && i <= cell1.second)
             QVERIFY(&(*the_cluster) == &(*first_cluster));
         else
             QVERIFY(&(*the_cluster) != &(*first_cluster));
     }
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::criar_um_range_invalido()
@@ -1138,14 +1189,14 @@ void Cluster_LegalizationTest::criar_um_range_invalido()
     Overlap_Removal::Row r(begin, end);
     EXCEPT_THROW(r.insert_range(10, 4, 6), Overlap_Removal::Invalid_Range);
     EXCEPT_THROW(r = Overlap_Removal::Row(1000, 999), Overlap_Removal::Invalid_Range);
-
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::mover_um_cluster_sem_precisar_passar_por_todos_do_cluster()
 {
     Overlap_Removal::Row r(0, 1000);
     std::pair<int, int> cell1(500, 599);
-    std::list<Overlap_Removal::Cluster>::iterator cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator cluster = r.insert_range(cell1, 1);
     cluster = r.move_cluster_to_right(cluster, 20);
     int last_end = cluster->begin() - 1;
     for(std::list<Overlap_Removal::Range_In_Cluster>::iterator it = cluster->ranges().begin(); it != cluster->ranges().end(); it++)
@@ -1154,26 +1205,43 @@ void Cluster_LegalizationTest::mover_um_cluster_sem_precisar_passar_por_todos_do
     QVERIFY(cluster->end() == 599+20);
     QVERIFY(cluster->ranges().front().begin() == cluster->begin());
     QVERIFY(cluster->ranges().back().end() == cluster->end());
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::referencia_range_para_cluster()
 {
     Overlap_Removal::Row r(0, 1000);
     std::pair<int, int> cell1(500, 599);
-    std::list<Overlap_Removal::Cluster>::iterator cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator cluster = r.insert_range(cell1, 1);
     Overlap_Removal::Range_In_Cluster & range = cluster->ranges().front();
     QVERIFY(range.cluster() == cluster);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 void Cluster_LegalizationTest::clone_de_linha()
 {
     Overlap_Removal::Row r(0, 1000);
     std::pair<int, int> cell1(500, 599);
-    std::list<Overlap_Removal::Cluster>::iterator cluster = r.insert_range(cell1, 1);
+    Cluster_Iterator cluster = r.insert_range(cell1, 1);
 
     Overlap_Removal::Row r2(r);
 
     QVERIFY(r2.number_of_clusters() == r.number_of_clusters());
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r2));
+
+}
+
+void Cluster_LegalizationTest::insercao_em_um_cluster_especifico()
+{
+    Overlap_Removal::Row r(0, 1000);
+    std::pair<int, int> cell1(500, 599);
+    Cluster_Iterator cluster = r.insert_range(cell1, 1);
+    cluster++;
+    QVERIFY(cluster->is_free_space());
+    r.insert_range_in_cluster(cluster, std::make_pair(620, 800), 2);
+    QVERIFY(r.number_of_clusters() == 5);
+    QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
 
@@ -1187,9 +1255,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == 400);
-        QVERIFY(nearests.second == 400);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first == nearests.second);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 
     { // Só depois
@@ -1199,9 +1267,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == 600);
-        QVERIFY(nearests.second == 600);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first->begin() == 600);
+        QVERIFY(nearests.second == nearests.first);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Antes e depois
         int begin = -1000;
@@ -1210,9 +1279,10 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == 400);
-        QVERIFY(nearests.second == 600);
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second->begin() == 600);
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Não tem
         int begin = 450;
@@ -1221,18 +1291,13 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<int, int> nearests = r.get_previous_and_next_free(cell2, 2);
-        QVERIFY(nearests.first == std::numeric_limits<int>::min());
-        QVERIFY(nearests.second ==  std::numeric_limits<int>::max());
+        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first == nearests.second);
+        QVERIFY(nearests.second == r.not_valid_iterator());
+        QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 
-
-
-
-
 }
-
-
 
 QTEST_APPLESS_MAIN(Cluster_LegalizationTest)
 

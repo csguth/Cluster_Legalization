@@ -15,18 +15,19 @@ class Row
     int _begin;
     int _end;
     std::list<Cluster> _clusters;
-    std::list<Cluster>::iterator __fill_cluster_with_a_range(std::list<Cluster>::iterator cluster, int begin, int end, int id);
-    std::list<Cluster>::iterator __place_range_at_beginning_of_cluster(std::list<Cluster>::iterator cluster, int begin, int end, int id);
-    std::list<Cluster>::iterator __place_range_at_end_of_cluster(std::list<Cluster>::iterator cluster, int begin, int end, int id);
-    std::list<Cluster>::iterator __place_range_at_middle_of_cluster(std::list<Cluster>::iterator cluster, int begin, int end, int id);
-    std::list<Cluster>::iterator __find_cluster_by_range(int begin, int end);
+    Cluster_Iterator __fill_cluster_with_a_range(Cluster_Iterator cluster, int begin, int end, int id);
+    Cluster_Iterator __place_range_at_beginning_of_cluster(Cluster_Iterator cluster, int begin, int end, int id);
+    Cluster_Iterator __place_range_at_end_of_cluster(Cluster_Iterator cluster, int begin, int end, int id);
+    Cluster_Iterator __place_range_at_middle_of_cluster(Cluster_Iterator cluster, int begin, int end, int id);
+    Cluster_Iterator __find_cluster_by_range(int begin, int end);
 
 
     // CLUSTERIZATION
-    std::list<Cluster>::iterator __clusterize_with_next(std::list<Cluster>::iterator cluster_it);
-    std::list<Cluster>::iterator __clusterize_with_previous(std::list<Cluster>::iterator cluster_it);
-    void __remove_free_cluster(std::list<Cluster>::iterator cluster);
-
+    void __remove_free_cluster(Cluster_Iterator cluster);
+    Cluster_Iterator __clusterize_with_next(Cluster_Iterator cluster_it);
+    Cluster_Iterator __clusterize_with_previous(Cluster_Iterator cluster_it);
+    Cluster_Iterator __find_first_cluster_on_the_left(Cluster_Iterator cluster, int size);
+    Cluster_Iterator __find_first_cluster_on_the_right(Cluster_Iterator cluster, int size);
 
 public:
     Row(int begin, int end);
@@ -36,17 +37,18 @@ public:
     int end();
     int number_of_clusters();
     const Cluster & cluster(int index);
-    std::list<Cluster>::iterator insert_range(int begin, int end, int id);
-    std::list<Cluster>::iterator insert_range(std::pair<int, int> range, int id);
+    Cluster_Iterator insert_range_in_cluster(Cluster_Iterator cluster, std::pair<int, int> range, int id);
+    Cluster_Iterator insert_range(int begin, int end, int id);
+    Cluster_Iterator insert_range(std::pair<int, int> range, int id);
     void remove_by_id(int id);
-    std::pair<int, int> get_previous_and_next_free(std::pair<int, int> range, int id);
-    std::pair<int, int> get_previous_and_next_free(int begin, int end, int id);
-    std::list<Cluster>::iterator move_cluster_to_right(std::list<Cluster>::iterator cluster_it, int step);
-    std::list<Cluster>::iterator move_cluster_to_left(std::list<Cluster>::iterator cluster_it, int step);
-    std::list<Cluster>::iterator find_cluster_by_range(std::pair<int, int> range);
-    std::list<Cluster>::iterator find_cluster_by_value(int value);
-    std::list<Cluster>::iterator first_cluster_iterator();
-    std::list<Cluster>::iterator not_valid_iterator();
+    std::pair<Cluster_Iterator, Cluster_Iterator> get_previous_and_next_free(std::pair<int, int> range);
+    std::pair<Cluster_Iterator, Cluster_Iterator> get_previous_and_next_free(int begin, int end);
+    Cluster_Iterator move_cluster_to_right(Cluster_Iterator cluster_it, int step);
+    Cluster_Iterator move_cluster_to_left(Cluster_Iterator cluster_it, int step);
+    Cluster_Iterator find_cluster_by_range(std::pair<int, int> range);
+    Cluster_Iterator find_cluster_by_value(int value);
+    Cluster_Iterator first_cluster_iterator();
+    Cluster_Iterator not_valid_iterator();
 };
 }
 
