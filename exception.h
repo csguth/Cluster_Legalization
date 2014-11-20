@@ -59,6 +59,15 @@ public:
     }
 };
 
+class Forbidden_Operation : public std::exception
+{
+public:
+    const char * what() const throw()
+    {
+        return "You can't move a free range";
+    }
+};
+
 
 }
 #endif // EXCEPTION_H

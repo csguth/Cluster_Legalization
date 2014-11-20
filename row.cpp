@@ -47,6 +47,10 @@ const Cluster &Row::cluster(int index)
 
 Cluster_Iterator Row::insert_range_in_cluster(Cluster_Iterator cluster, std::pair<int, int> range, int id)
 {
+    if(!cluster->is_free_space())
+        throw Already_Filled();
+    else if(!cluster->has_capacity(range.second-range.first+1) || cluster->end()-range.first < range.second-range.first)
+        throw Range_Too_Big();
     if(cluster->begin() == range.first && cluster->end() == range.second) // CASO1: Célula ocupa o cluster inteiro
         cluster = __fill_cluster_with_a_range(cluster, range.first, range.second, id);
     else if(cluster->begin() == range.first && range.second < cluster->end()) // CASO2: Célula ocupa o início do cluster
@@ -132,10 +136,6 @@ Cluster_Iterator Row::insert_range(int begin, int end, int id)
     if(end < begin)
         throw Invalid_Range();
     Cluster_Iterator cluster = __find_cluster_by_range(begin, end);
-    if(!cluster->is_free_space())
-        throw Already_Filled();
-    else if(!cluster->has_capacity(end-begin-1) || cluster->end()-begin < end-begin)
-        throw Range_Too_Big();
     return insert_range_in_cluster(cluster, std::make_pair(begin, end), id);
 }
 
@@ -300,6 +300,8 @@ Cluster_Iterator Row::__clusterize_with_previous(Cluster_Iterator cluster_it)
 
 Cluster_Iterator Row::move_cluster_to_right(Cluster_Iterator cluster_it, int step)
 {
+    if(cluster_it->is_free_space())
+        throw Forbidden_Operation();
     if(step < 1)
         throw Invalid_Step_Size();
     // Checa se tem espaço
@@ -331,6 +333,8 @@ Cluster_Iterator Row::move_cluster_to_right(Cluster_Iterator cluster_it, int ste
 
 Cluster_Iterator Row::move_cluster_to_left(Cluster_Iterator cluster_it, int step)
 {
+    if(cluster_it->is_free_space())
+        throw Forbidden_Operation();
     if(step < 1)
         throw Invalid_Step_Size();
     // Checa se tem espaço
@@ -385,5 +389,56 @@ Cluster_Iterator Row::first_cluster_iterator()
 Cluster_Iterator Row::not_valid_iterator()
 {
     return _clusters.end();
+}
+
+int Row::free_space_on_right(Cluster_Iterator cluster)
+{
+    cluster++;
+    if(cluster == _clusters.end())
+        return 0;
+    if(cluster->is_free_space())
+        return cluster->end()-cluster->begin()+1;
+    return 0;
+}
+
+int Row::free_space_on_left(Cluster_Iterator cluster)
+{
+    if(cluster == _clusters.begin())
+        return 0;
+    cluster--;
+    if(cluster->is_free_space())
+        return cluster->end()-cluster->begin()+1;
+    return 0;
+}
+
+int Row::total_free_space_on_right(Cluster_Iterator cluster)
+{
+    int space  = 0;
+    if(!cluster->is_free_space())
+    {
+        cluster++;
+        while(cluster != _clusters.end())
+        {
+            if(cluster->is_free_space())
+                space += cluster->end()-cluster->begin()+1;
+            cluster++;
+        }
+    }
+    return space;
+}
+
+int Row::total_free_space_on_left(Cluster_Iterator cluster)
+{
+    int space  = 0;
+    if(!cluster->is_free_space())
+    {
+        while(cluster != _clusters.begin())
+        {
+            cluster--;
+            if(cluster->is_free_space())
+                space += cluster->end()-cluster->begin()+1;
+        }
+    }
+    return space;
 }
 }

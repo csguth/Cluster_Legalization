@@ -49,6 +49,12 @@ public:
     Cluster_Iterator find_cluster_by_value(int value);
     Cluster_Iterator first_cluster_iterator();
     Cluster_Iterator not_valid_iterator();
+
+
+    int free_space_on_right(Cluster_Iterator cluster);
+    int free_space_on_left(Cluster_Iterator cluster);
+    int total_free_space_on_right(Cluster_Iterator cluster);
+    int total_free_space_on_left(Cluster_Iterator cluster);
 };
 }
 
