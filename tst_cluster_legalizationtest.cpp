@@ -836,9 +836,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         std::pair<int, int> cell3(450, 499);
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell3);
-        QVERIFY(nearests.first->end() == cell1.first - 1);
-        QVERIFY(nearests.second == nearests.first);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell3);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first == r.not_valid_iterator());
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Só depois
@@ -852,9 +852,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
-        QVERIFY(nearests.first == nearests.second);
-        QVERIFY(nearests.second->begin() == 500);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first.first == r.not_valid_iterator());
+        QVERIFY(nearests.second.first->begin() == 500);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Antes e Depois
@@ -868,9 +868,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
-        QVERIFY(nearests.first->end() == cell1.first - 1);
-        QVERIFY(nearests.second->begin() == 500);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first->begin() == 500);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Não tem
@@ -884,9 +884,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_passando_por_cima_de
         r.insert_range(cell1.first, cell1.second, 1);
         r.insert_range(cell2.first, cell2.second, 2);
         r.insert_range(cell3.first, cell3.second, 3);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell4);
-        QVERIFY(nearests.first == nearests.second);
-        QVERIFY(nearests.second == r.not_valid_iterator());
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell4);
+        QVERIFY(nearests.first.first == nearests.second.first);
+        QVERIFY(nearests.second.first == r.not_valid_iterator());
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
@@ -899,9 +899,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_comeca_a
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(180, 279);
     r.insert_range(cell1, 1);
-    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-    QVERIFY(nearests.first->end() == cell1.first - 1);
-    QVERIFY(nearests.second->begin() == cell1.second + 1);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second.first->begin() == cell1.second + 1);
     QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
@@ -913,9 +913,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_cabe_int
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(210, 229);
     r.insert_range(cell1, 1);
-    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-    QVERIFY(nearests.first->end() == cell1.first - 1);
-    QVERIFY(nearests.second->begin() == cell1.second + 1);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second.first->begin() == cell1.second + 1);
     QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
@@ -927,11 +927,11 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_ocupa_o_
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(200, 239);
     r.insert_range(cell1, 1);
-    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-    QVERIFY(nearests.first->end() == cell1.first - 1);
-    QVERIFY(nearests.second->begin() == cell1.second + 1);
-    QVERIFY(nearests.first->has_capacity(cell2.second-cell2.first+1));
-    QVERIFY(nearests.second->has_capacity(cell2.second-cell2.first+1));
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first.first->end() == cell1.first - 1);
+    QVERIFY(nearests.second.first->begin() == cell1.second + 1);
+    QVERIFY(nearests.first.first->has_capacity(cell2.second-cell2.first+1));
+    QVERIFY(nearests.second.first->has_capacity(cell2.second-cell2.first+1));
     QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
@@ -944,9 +944,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_tem_o_me
         std::pair<int, int> cell1(200, 239);
         std::pair<int, int> cell2(220, 259);
         r.insert_range(cell1, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first->end() == cell1.first - 1);
-        QVERIFY(nearests.second->begin() == cell1.second + 1);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first->begin() == cell1.second + 1);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     {
@@ -956,9 +956,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_se_a_celula_tem_o_me
         std::pair<int, int> cell1(200, 239);
         std::pair<int, int> cell2(180, 219);
         r.insert_range(cell1, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first->end() == cell1.first - 1);
-        QVERIFY(nearests.second->begin() == cell1.second + 1);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first->begin() == cell1.second + 1);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 }
@@ -971,10 +971,10 @@ void Cluster_LegalizationTest::obter_posicao_mais_proxima_se_a_celula_cabe_onde_
     std::pair<int, int> cell1(200, 239);
     std::pair<int, int> cell2(300, 399);
     r.insert_range(cell1, 1);
-    std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-    QVERIFY(nearests.first == nearests.second);
-    QVERIFY(nearests.first->begin() <= cell2.first);
-    QVERIFY(nearests.first->end() >= cell2.second);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+    QVERIFY(nearests.first.first == nearests.second.first);
+    QVERIFY(nearests.first.first->begin() <= cell2.first);
+    QVERIFY(nearests.first.first->end() >= cell2.second);
     QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
 }
 
@@ -1324,8 +1324,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first == nearests.second);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first == r.not_valid_iterator());
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 
@@ -1336,9 +1337,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first->begin() == 600);
-        QVERIFY(nearests.second == nearests.first);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first == r.not_valid_iterator());
+        QVERIFY(nearests.second.first->begin() == cell1.second + 1);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Antes e depois
@@ -1348,9 +1349,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first->end() == cell1.first - 1);
-        QVERIFY(nearests.second->begin() == 600);
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first->end() == cell1.first - 1);
+        QVERIFY(nearests.second.first->begin() == cell1.second + 1);
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
     { // Não tem
@@ -1360,9 +1361,9 @@ void Cluster_LegalizationTest::obter_posicoes_mais_proximas_sem_passar_por_cima(
         std::pair<int, int> cell1(500, 599);
         std::pair<int, int> cell2(581, 680);
         r.insert_range(cell1.first, cell1.second, 1);
-        std::pair<Cluster_Iterator, Cluster_Iterator> nearests = r.get_previous_and_next_free(cell2);
-        QVERIFY(nearests.first == nearests.second);
-        QVERIFY(nearests.second == r.not_valid_iterator());
+        std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > nearests = r.get_previous_and_next_free(cell2);
+        QVERIFY(nearests.first.first == nearests.second.first);
+        QVERIFY(nearests.second.first == r.not_valid_iterator());
         QVERIFY(verifica_se_todos_os_ranges_estao_com_referencias_para_seus_clusters(r));
     }
 

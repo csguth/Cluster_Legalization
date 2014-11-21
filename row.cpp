@@ -8,9 +8,9 @@ Row::Row(int begin, int end) :_begin(begin), _end(end)
     clear();
 }
 
-Row::Row(Row &other): _begin(other._begin), _end(other._end)
+Row::Row(const Overlap_Removal::Row &other): _begin(other._begin), _end(other._end)
 {
-    for(Cluster_Iterator it = other._clusters.begin(); it != other._clusters.end(); it++)
+    for(std::list<Overlap_Removal::Cluster>::const_iterator it = other._clusters.begin(); it != other._clusters.end(); it++)
     {
         Cluster_Iterator inserted = _clusters.insert(_clusters.end(), (*it));
         inserted->set_cluster_iterator_to_all_ranges(inserted);
@@ -200,7 +200,7 @@ void Row::remove_by_id(int id)
     _clusters.erase(cluster);
 }
 
-std::pair<Cluster_Iterator, Cluster_Iterator> Row::get_previous_and_next_free(std::pair<int, int> range)
+std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(std::pair<int, int> range)
 {
     return get_previous_and_next_free(range.first, range.second);
 }
@@ -235,24 +235,22 @@ Cluster_Iterator Row::__find_first_cluster_on_the_left(Cluster_Iterator cluster,
     return left;
 }
 
-std::pair<Cluster_Iterator, Cluster_Iterator> Row::get_previous_and_next_free(int begin, int end)
+std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(int begin, int end)
 {
     Cluster_Iterator cluster = find_cluster_by_value(begin);
     if(cluster != _clusters.end())
     {
         if(cluster->is_free_space() && cluster->end() >= end)
-            return std::make_pair(cluster, cluster);
+            return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
         else if(cluster->is_free_space() && cluster->end() < end)
             cluster++;
     }
-    std::pair<Cluster_Iterator, Cluster_Iterator> near(_clusters.end(), _clusters.end());
-    Cluster_Iterator left = __find_first_cluster_on_the_left(cluster, end-begin+1);
-    Cluster_Iterator right = __find_first_cluster_on_the_right(cluster, end-begin+1);
-    if(left == _clusters.end() && right != _clusters.end())
-        left = right;
-    else if(right == _clusters.end() && left != _clusters.end())
-        right = left;
-    return std::make_pair(left, right);
+    int size = end-begin+1;
+    Cluster_Iterator left = __find_first_cluster_on_the_left(cluster, size);
+    Cluster_Iterator right = __find_first_cluster_on_the_right(cluster, size);
+    std::pair<Cluster_Iterator, int> left_pair(left, (left != _clusters.end() ? left->end() - size : -1));
+    std::pair<Cluster_Iterator, int> right_pair(right, (right != _clusters.end() ? right->begin() : -1));
+    return std::make_pair(left_pair, right_pair);
 }
 
 Cluster_Iterator Row::__clusterize_with_next(Cluster_Iterator cluster_it)

@@ -31,7 +31,7 @@ class Row
 
 public:
     Row(int begin, int end);
-    Row(Row & other);
+    Row(const Row & other);
     void clear();
     int begin();
     int end();
@@ -41,8 +41,8 @@ public:
     Cluster_Iterator insert_range(int begin, int end, int id);
     Cluster_Iterator insert_range(std::pair<int, int> range, int id);
     void remove_by_id(int id);
-    std::pair<Cluster_Iterator, Cluster_Iterator> get_previous_and_next_free(std::pair<int, int> range);
-    std::pair<Cluster_Iterator, Cluster_Iterator> get_previous_and_next_free(int begin, int end);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(std::pair<int, int> range);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(int begin, int end);
     Cluster_Iterator move_cluster_to_right(Cluster_Iterator cluster_it, int step);
     Cluster_Iterator move_cluster_to_left(Cluster_Iterator cluster_it, int step);
     Cluster_Iterator find_cluster_by_range(std::pair<int, int> range);
