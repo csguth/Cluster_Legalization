@@ -18,7 +18,8 @@ TEMPLATE = app
 SOURCES += tst_cluster_legalizationtest.cpp \
     row.cpp \
     cluster.cpp \
-    range_in_cluster.cpp
+    range_in_cluster.cpp \
+    insert_range_moving_the_others.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 HEADERS += \
@@ -26,4 +27,5 @@ HEADERS += \
     cluster.h \
     util.h \
     exception.h \
-    range_in_cluster.h
+    range_in_cluster.h \
+    insert_range_moving_the_others.h

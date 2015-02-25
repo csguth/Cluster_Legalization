@@ -200,9 +200,9 @@ void Row::remove_by_id(int id)
     _clusters.erase(cluster);
 }
 
-std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(std::pair<int, int> range)
+std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(std::pair<int, int> range, double ratio)
 {
-    return get_previous_and_next_free(range.first, range.second);
+    return get_previous_and_next_free(range.first, range.second, ratio);
 }
 
 Cluster_Iterator Row::__find_first_cluster_on_the_right(Cluster_Iterator cluster, int size)
@@ -235,20 +235,59 @@ Cluster_Iterator Row::__find_first_cluster_on_the_left(Cluster_Iterator cluster,
     return left;
 }
 
-std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(int begin, int end)
+std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > Row::get_previous_and_next_free(int begin, int end, double ratio)
 {
     Cluster_Iterator cluster = find_cluster_by_value(begin);
+    int size = end-begin+1;
+
     if(cluster != _clusters.end())
     {
-        if(cluster->is_free_space() && cluster->end() >= end)
-            return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
-        else if(cluster->is_free_space() && cluster->end() < end)
+        if(cluster->is_free_space())
+        {
+            std::pair<int, int> intersect(std::max(begin, cluster->begin()), std::min(end, cluster->end()));
+            int intersect_size = intersect.second-intersect.first+1;
+
+            if(static_cast<double>(intersect_size)/static_cast<double>(size) >= ratio)
+            {
+                if(intersect_size == size)
+                    return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
+                Cluster_Iterator next(cluster);
+                next++;
+                if(next != _clusters.end())
+                {
+                    if(free_space_on_right(next) >= size - intersect_size)
+                        return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
+                }
+            }
             cluster++;
+        } else
+        {
+            std::pair<int, int> intersect(std::max(begin, cluster->begin()), std::min(end, cluster->end()));
+            int intersect_size = intersect.second-intersect.first+1;
+            if(static_cast<double>(intersect_size)/static_cast<double>(size) < (1-ratio))
+            {
+                if(free_space_on_left(cluster) >= intersect_size)
+                {
+                    Cluster_Iterator next(cluster);
+                    next++;
+                    if(next != _clusters.end())
+                    {
+                        if(next->end() >= end)
+                            return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
+                        next++;
+                        if(next != _clusters.end())
+                        {
+                            if(next->begin() > end || free_space_on_right(next) >= size-intersect_size)
+                                return std::make_pair(std::make_pair(cluster, begin), std::make_pair(cluster, begin));
+                        }
+                    }
+                }
+            }
+        }
     }
-    int size = end-begin+1;
     Cluster_Iterator left = __find_first_cluster_on_the_left(cluster, size);
     Cluster_Iterator right = __find_first_cluster_on_the_right(cluster, size);
-    std::pair<Cluster_Iterator, int> left_pair(left, (left != _clusters.end() ? left->end() - size : -1));
+    std::pair<Cluster_Iterator, int> left_pair(left, (left != _clusters.end() ? left->end() - size + 1 : -1));
     std::pair<Cluster_Iterator, int> right_pair(right, (right != _clusters.end() ? right->begin() : -1));
     return std::make_pair(left_pair, right_pair);
 }
@@ -409,10 +448,15 @@ int Row::free_space_on_left(Cluster_Iterator cluster)
     return 0;
 }
 
-int Row::total_free_space_on_right(Cluster_Iterator cluster)
+int Row::total_free_space_on_right(Cluster_Iterator cluster, int value)
 {
     int space  = 0;
-    if(!cluster->is_free_space())
+    if(cluster->is_free_space())
+    {
+        space = value-cluster->begin();
+        cluster++;
+    }
+    if(cluster != _clusters.end())
     {
         cluster++;
         while(cluster != _clusters.end())
@@ -425,9 +469,15 @@ int Row::total_free_space_on_right(Cluster_Iterator cluster)
     return space;
 }
 
-int Row::total_free_space_on_left(Cluster_Iterator cluster)
+int Row::total_free_space_on_left(Cluster_Iterator cluster, int value)
 {
     int space  = 0;
+    if(cluster->is_free_space())
+    {
+        space = value-cluster->begin();
+        if(cluster != _clusters.begin())
+            cluster--;
+    }
     if(!cluster->is_free_space())
     {
         while(cluster != _clusters.begin())
@@ -438,5 +488,166 @@ int Row::total_free_space_on_left(Cluster_Iterator cluster)
         }
     }
     return space;
+}
+
+int Row::first_range_at_left_of(std::pair<int, int> range)
+{
+    int width = range.second-range.first+1;
+    int middle = range.first+width/2;
+    Cluster_Iterator the_cluster = find_cluster_by_value(middle);
+    int id = -1;
+
+    if(the_cluster->is_free_space() && the_cluster == _clusters.begin()) // there is no range at left
+        return id;
+
+    else if(the_cluster->is_free_space()) // there are ranges at left
+        the_cluster--;
+
+    for(std::list<Range_In_Cluster>::const_iterator the_range = the_cluster->ranges().begin(); the_range != the_cluster->ranges().end(); the_range++)
+    {
+        int range_width = the_range->end()-the_range->begin()+1;
+        int range_middle = the_range->begin() + range_width/2;
+        if(range_middle < middle)
+            id = the_range->id();
+        else break;
+    }
+
+    if(id == -1)
+    {
+        the_cluster--;
+        if(the_cluster == _clusters.begin()) // free at begin
+            return id;
+        the_cluster--;
+        for(std::list<Range_In_Cluster>::const_iterator the_range = the_cluster->ranges().begin(); the_range != the_cluster->ranges().end(); the_range++)
+        {
+            int range_width = the_range->end()-the_range->begin()+1;
+            int range_middle = the_range->begin() + range_width/2;
+            if(range_middle < middle)
+                id = the_range->id();
+            else break;
+        }
+    }
+    return id;
+
+}
+
+int Row::first_range_at_right_of(std::pair<int, int> range)
+{
+    int width = range.second-range.first+1;
+    int middle = range.first+width/2;
+    Cluster_Iterator the_cluster = find_cluster_by_value(middle);
+
+    if(the_cluster->is_free_space())
+        the_cluster++;
+    if(the_cluster == _clusters.end())
+        return -1;
+    int id = -1;
+    for(std::list<Range_In_Cluster>::const_reverse_iterator the_range = the_cluster->ranges().rbegin(); the_range != the_cluster->ranges().rend(); the_range++)
+    {
+        int range_width = the_range->end()-the_range->begin()+1;
+        int range_middle = the_range->begin() + range_width/2;
+        if(range_middle > middle)
+            id = the_range->id();
+        else break;
+    }
+    if(id == -1)
+    {
+        the_cluster++;
+        if(the_cluster != _clusters.end())
+        {
+            the_cluster++;
+            if(the_cluster != _clusters.end())
+            {
+                for(std::list<Range_In_Cluster>::const_reverse_iterator the_range = the_cluster->ranges().rbegin(); the_range != the_cluster->ranges().rend(); the_range++)
+                {
+                    int range_width = the_range->end()-the_range->begin()+1;
+                    int range_middle = the_range->begin() + range_width/2;
+                    if(range_middle > middle)
+                        id = the_range->id();
+                    else break;
+                }
+            }
+        }
+    }
+
+    return id;
+}
+
+Cluster_Iterator Row::find_cluster_by_id(int id)
+{
+    return std::find_if(_clusters.begin(), _clusters.end(), Cluster_Has_Id(id));
+}
+
+int Row::free_space()
+{
+    int space = 0;
+    for(Cluster_Iterator the_cluster = _clusters.begin(); the_cluster != _clusters.end(); the_cluster++)
+    {
+        if(the_cluster->is_free_space())
+            space += the_cluster->end()-the_cluster->begin()+1;
+    }
+    return space;
+}
+
+Cluster_Iterator Row::split_cluster_and_move_to_left(Cluster_Iterator cluster, int range_id, int step)
+{
+    // if the first range is the split point, just move
+    if(cluster->ranges().back().id() == range_id)
+        return move_cluster_to_left(cluster, step);
+
+    // save the ranges
+    std::list<std::pair<std::pair<int, int>, int> > ranges;
+    for(std::list<Range_In_Cluster>::const_iterator the_range = cluster->ranges().begin(); the_range != cluster->ranges().end(); the_range++)
+        ranges.push_back(std::make_pair(std::make_pair(the_range->begin(), the_range->end()), the_range->id()));
+
+    // remove all ranges and move some of those to the left
+    bool before = true;
+    for(std::list<std::pair<std::pair<int, int>, int> >::iterator the_range = ranges.begin(); the_range != ranges.end(); the_range++)
+    {
+        remove_by_id(the_range->second);
+        if(before)
+        {
+            the_range->first.first -= step;
+            the_range->first.second -= step;
+        }
+        if(the_range->second == range_id)
+            before = false;
+    }
+
+    // re-insert all ranges
+    for(std::list<std::pair<std::pair<int, int>, int> >::iterator the_range = ranges.begin(); the_range != ranges.end(); the_range++)
+        insert_range(the_range->first, the_range->second);
+    return find_cluster_by_id(range_id);
+}
+
+Cluster_Iterator Row::split_cluster_and_move_to_right(Cluster_Iterator cluster, int range_id, int step)
+{
+    // if the first range is the split point, just move
+    if(cluster->ranges().front().id() == range_id)
+        return move_cluster_to_right(cluster, step);
+
+    // save the ranges
+    std::list<std::pair<std::pair<int, int>, int> > ranges;
+    for(std::list<Range_In_Cluster>::const_iterator the_range = cluster->ranges().begin(); the_range != cluster->ranges().end(); the_range++)
+        ranges.push_back(std::make_pair(std::make_pair(the_range->begin(), the_range->end()), the_range->id()));
+
+    // remove all ranges and move some of those to the right
+    bool after = true;
+    for(std::list<std::pair<std::pair<int, int>, int> >::reverse_iterator the_range = ranges.rbegin(); the_range != ranges.rend(); the_range++)
+    {
+        remove_by_id(the_range->second);
+        if(after)
+        {
+            the_range->first.first += step;
+            the_range->first.second += step;
+        }
+        if(the_range->second == range_id)
+            after = false;
+    }
+
+    // re-insert all ranges
+    for(std::list<std::pair<std::pair<int, int>, int> >::iterator the_range = ranges.begin(); the_range != ranges.end(); the_range++)
+        insert_range(the_range->first, the_range->second);
+    return find_cluster_by_id(range_id);
 }
 }

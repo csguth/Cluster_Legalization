@@ -41,8 +41,8 @@ public:
     Cluster_Iterator insert_range(int begin, int end, int id);
     Cluster_Iterator insert_range(std::pair<int, int> range, int id);
     void remove_by_id(int id);
-    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(std::pair<int, int> range);
-    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(int begin, int end);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(std::pair<int, int> range, double ratio = 1.0);
+    std::pair<std::pair<Cluster_Iterator, int> , std::pair<Cluster_Iterator, int> > get_previous_and_next_free(int begin, int end, double ratio = 1.0);
     Cluster_Iterator move_cluster_to_right(Cluster_Iterator cluster_it, int step);
     Cluster_Iterator move_cluster_to_left(Cluster_Iterator cluster_it, int step);
     Cluster_Iterator find_cluster_by_range(std::pair<int, int> range);
@@ -53,8 +53,20 @@ public:
 
     int free_space_on_right(Cluster_Iterator cluster);
     int free_space_on_left(Cluster_Iterator cluster);
-    int total_free_space_on_right(Cluster_Iterator cluster);
-    int total_free_space_on_left(Cluster_Iterator cluster);
+    int total_free_space_on_right(Cluster_Iterator cluster, int value);
+    int total_free_space_on_left(Cluster_Iterator cluster, int value);
+
+
+
+    int first_range_at_left_of(std::pair<int, int> range);
+    int first_range_at_right_of(std::pair<int, int> range);
+
+    Cluster_Iterator find_cluster_by_id(int id);
+
+    int free_space();
+
+    Cluster_Iterator split_cluster_and_move_to_left(Cluster_Iterator cluster, int range_id, int step);
+    Cluster_Iterator split_cluster_and_move_to_right(Cluster_Iterator cluster, int range_id, int step);
 };
 }
 
